@@ -1,0 +1,862 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no,viewport-fit=cover">
+<meta name="format-detection" content="telephone=no">
+<meta name="color-scheme" content="dark light">
+<title>SkyTrace — Live Flight Tracker</title>
+<meta name="description" content="Real-time global flight tracker with live altitude, speed, airline and country-of-origin data.">
+<meta name="theme-color" content="#3b82f6">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="SkyTrace">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/x-icon" href="favicon.ico">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/icon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="icons/icon-16.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="apple-touch-icon" sizes="180x180" href="icons/icon-180.png">
+<link rel="apple-touch-icon" sizes="152x152" href="icons/icon-152.png">
+<link rel="apple-touch-icon" sizes="167x167" href="icons/icon-167.png">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0d1117;--sur:#161b22;--card:#1e242e;--bdr:#2a3140;--acc:#3b82f6;--acc2:#60a5fa;--tx:#e6edf3;--mu:#7d8998;--gr:#22c55e;--am:#f59e0b;--re:#ef4444;--rr:12px;--sat:env(safe-area-inset-top,0px);--sab:env(safe-area-inset-bottom,0px);--sal:env(safe-area-inset-left,0px);--sar:env(safe-area-inset-right,0px)}
+[data-theme=light]{--bg:#f0f4f8;--sur:#fff;--card:#e8eef5;--bdr:#c8d4e0;--acc:#2563eb;--acc2:#3b82f6;--tx:#0f172a;--mu:#64748b}
+[data-theme=oled]{--bg:#000;--sur:#0a0a0a;--card:#111;--bdr:#1a1a1a;--acc:#3b82f6;--acc2:#60a5fa;--tx:#fff;--mu:#666}
+[data-theme=hc]{--bg:#000;--sur:#000;--card:#000;--bdr:#fff;--acc:#ff0;--acc2:#ff0;--tx:#fff;--mu:#ccc}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;tap-highlight-color:transparent}
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%;overscroll-behavior-y:none}
+body{font-family:'Space Grotesk',sans-serif;background:var(--bg);color:var(--tx);min-height:100vh;min-height:100dvh;width:100%;max-width:100vw;overflow-x:hidden;transition:background .25s,color .25s;display:flex;flex-direction:column;align-items:center;-webkit-font-smoothing:antialiased;overscroll-behavior-y:contain;touch-action:pan-y}
+button,input{font:inherit;-webkit-appearance:none;appearance:none;touch-action:manipulation}
+a,button,.pill,.fc,.theme-btn{touch-action:manipulation}
+/* Hover states only apply on devices that truly support hover (mouse/trackpad) — prevents sticky :hover on touch */
+@media (hover:hover) and (pointer:fine){
+  .pill:hover,.theme-btn:hover{border-color:var(--acc);color:var(--acc)}
+  .pill.active:hover{color:#fff}
+  .fc:hover{border-color:var(--acc)}
+  .btn:hover{opacity:.82}
+}
+header{width:100%;max-width:700px;padding:calc(16px + var(--sat)) calc(16px + var(--sar)) 0 calc(16px + var(--sal));display:flex;align-items:center;justify-content:space-between;gap:8px}
+.logo{display:flex;align-items:center;gap:8px;min-width:0;flex-shrink:1}
+.logo-icon{width:32px;height:32px;background:var(--acc);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.logo-text{font-size:1rem;font-weight:700;letter-spacing:-.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.logo-sub{font-size:.58rem;color:var(--mu);font-family:'JetBrains Mono',monospace;letter-spacing:.06em;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.themes{display:flex;gap:4px}
+.theme-btn{width:38px;height:38px;border-radius:9px;border:1.5px solid var(--bdr);cursor:pointer;font-size:10px;font-weight:700;font-family:'JetBrains Mono',monospace;display:flex;align-items:center;justify-content:center;transition:all .15s;background:var(--sur);color:var(--mu);-webkit-tap-highlight-color:transparent}
+.theme-btn.active{border-color:var(--acc);color:var(--acc)}
+.theme-btn:active{transform:scale(0.92)}
+main{width:100%;max-width:700px;padding:12px calc(16px + var(--sar)) calc(12px + var(--sab)) calc(16px + var(--sal))}
+.pills{display:flex;gap:6px;margin-bottom:10px;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;scrollbar-width:none;scroll-snap-type:x proximity;padding-bottom:2px}
+.pills::-webkit-scrollbar{display:none}
+.pills .pill{scroll-snap-align:start}
+@media (min-width:600px){.pills{flex-wrap:wrap;overflow-x:visible}}
+.pill{background:var(--card);border:1.5px solid var(--bdr);border-radius:20px;padding:8px 12px;min-height:36px;display:inline-flex;align-items:center;font-size:.7rem;font-weight:600;cursor:pointer;transition:all .15s;font-family:'JetBrains Mono',monospace;color:var(--mu);white-space:nowrap}
+.pill:active{transform:scale(0.96)}
+.pill.active{background:var(--acc);border-color:var(--acc);color:#fff}
+.srow{display:flex;gap:6px;margin-bottom:10px}
+.swrap{flex:1;background:var(--sur);border:1.5px solid var(--bdr);border-radius:9px;padding:10px 11px;min-height:40px;display:flex;align-items:center;gap:7px;transition:border-color .15s}
+.swrap:focus-within{border-color:var(--acc)}
+.swrap input{flex:1;background:none;border:none;outline:none;font-family:'JetBrains Mono',monospace;font-size:16px;color:var(--tx);min-width:0}
+@media (min-width:480px){.swrap input{font-size:.8rem}}
+.swrap input::placeholder{color:var(--mu)}
+.btn{background:var(--acc);color:#fff;border:none;border-radius:8px;padding:10px 14px;min-height:40px;font-family:'Space Grotesk',sans-serif;font-size:.78rem;font-weight:600;cursor:pointer;transition:opacity .15s,transform .1s;white-space:nowrap;flex-shrink:0;display:inline-flex;align-items:center;justify-content:center}
+.btn:active{transform:scale(0.96)}
+.btn.ol{background:none;color:var(--acc);border:1.5px solid var(--acc)}
+#spdUnitBtn,#altUnitBtn{min-width:44px;text-align:center;padding:10px 6px}
+.sbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:5px;font-size:.71rem;color:var(--mu);gap:8px}
+.ldot{width:7px;height:7px;border-radius:50%;background:var(--gr);display:inline-block;margin-right:5px;animation:pulse 2s infinite;flex-shrink:0}
+.edot{width:7px;height:7px;border-radius:50%;background:var(--re);display:inline-block;margin-right:5px;flex-shrink:0}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.pbar{height:2px;background:var(--bdr);border-radius:2px;margin-bottom:10px;overflow:hidden}
+.pfill{height:100%;background:var(--acc);border-radius:2px;width:100%}
+/* Flight cards */
+.fc{background:var(--sur);border:1.5px solid var(--bdr);border-radius:var(--rr);padding:12px;margin-bottom:8px;cursor:pointer;transition:border-color .15s,transform .1s;position:relative;overflow:hidden;-webkit-tap-highlight-color:transparent}
+.fc:active{transform:scale(0.985);border-color:var(--acc)}
+.fc::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--acc)}
+.fc-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:5px;gap:6px}
+.cs{font-family:'JetBrains Mono',monospace;font-size:.92rem;font-weight:600;letter-spacing:.04em;color:var(--acc2);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.badge{font-size:.59rem;font-weight:600;padding:2px 7px;border-radius:20px;font-family:'JetBrains Mono',monospace;white-space:nowrap;flex-shrink:0}
+.air{background:rgba(34,197,94,.12);color:var(--gr);border:1px solid rgba(34,197,94,.22)}
+.gnd{background:rgba(245,158,11,.12);color:var(--am);border:1px solid rgba(245,158,11,.22)}
+/* Airline row */
+.arow{display:flex;align-items:center;gap:5px;margin-bottom:4px;flex-wrap:wrap}
+.aico{font-size:.68rem;font-weight:700;font-family:'JetBrains Mono',monospace;background:var(--acc);color:#fff;padding:1px 6px;border-radius:5px;flex-shrink:0}
+.aname{font-size:.75rem;font-weight:600;color:var(--tx)}
+/* Airline row */
+.arow{font-size:.72rem;font-weight:600;color:var(--acc2);margin-bottom:4px}
+/* Country row */
+.crow{display:flex;align-items:baseline;gap:5px;margin-bottom:7px;flex-wrap:wrap;line-height:1.4}
+.cflag{font-size:.85rem}
+.cname{font-size:.72rem;font-weight:600;color:var(--tx)}
+.cori{font-size:.63rem;color:var(--mu);font-style:italic}
+/* Live grid */
+.grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px;margin-bottom:7px}
+.gi{text-align:center;background:var(--card);border-radius:7px;padding:6px 3px}
+.gl{font-size:.55rem;color:var(--mu);text-transform:uppercase;letter-spacing:.07em;margin-bottom:2px;font-family:'JetBrains Mono',monospace}
+.gv{font-size:.8rem;font-weight:700;font-family:'JetBrains Mono',monospace;transition:color .35s}
+.gv.flash{color:var(--acc2)}
+.meta{display:flex;align-items:center;gap:5px;font-size:.65rem;color:var(--mu);font-family:'JetBrains Mono',monospace;flex-wrap:wrap}
+/* Detail panel */
+.dp{background:var(--sur);border:1.5px solid var(--acc);border-radius:var(--rr);padding:14px;margin-bottom:10px;display:none}
+.dp.show{display:block}
+.dph{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:9px;gap:8px}
+.dpcs{font-family:'JetBrains Mono',monospace;font-size:1.08rem;font-weight:700;color:var(--acc2)}
+.dpmu{font-size:.6rem;color:var(--mu);font-family:'JetBrains Mono',monospace;margin-top:3px;line-height:1.5}
+.dp-crow{background:var(--card);border-radius:8px;padding:9px 11px;margin-bottom:8px;display:flex;align-items:flex-start;gap:9px}
+.dp-cflag{font-size:1.2rem;flex-shrink:0;margin-top:1px}
+.dp-cname{font-size:.82rem;font-weight:600;margin-bottom:2px}
+.dp-cori{font-size:.7rem;color:var(--mu);font-style:italic;line-height:1.5}
+.dp-locrow{background:var(--card);border-radius:8px;padding:8px 11px;margin-bottom:6px;font-size:.76rem;font-weight:500}
+.dp-routerow{background:var(--card);border-radius:8px;padding:8px 11px;margin-bottom:8px;font-size:.78rem;line-height:1.5}
+.dpg{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.dpi{background:var(--card);border-radius:7px;padding:8px 9px}
+.dpl{font-size:.57rem;color:var(--mu);text-transform:uppercase;font-family:'JetBrains Mono',monospace;letter-spacing:.07em;margin-bottom:2px}
+.dpv{font-size:.82rem;font-weight:600;font-family:'JetBrains Mono',monospace;word-break:break-all;transition:color .35s}
+.dpv.flash{color:var(--acc2)}
+.loader{text-align:center;padding:36px 20px;color:var(--mu)}
+.spin{width:28px;height:28px;border:2.5px solid var(--bdr);border-top-color:var(--acc);border-radius:50%;animation:spin 1s linear infinite;margin:0 auto 9px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.empty{text-align:center;padding:36px 20px;color:var(--mu);font-size:.82rem;line-height:1.7}
+footer{width:100%;max-width:700px;padding:12px calc(16px + var(--sar)) calc(12px + var(--sab)) calc(16px + var(--sal));text-align:center;font-size:.67rem;color:var(--mu);margin-top:auto;border-top:1px solid var(--bdr)}
+
+/* Extra-narrow phones (iPhone SE, small Android — 320–360px) */
+@media (max-width:360px){
+  header{padding-left:calc(12px + var(--sal));padding-right:calc(12px + var(--sar))}
+  main{padding-left:calc(12px + var(--sal));padding-right:calc(12px + var(--sar))}
+  .logo-text{font-size:.92rem}
+  .logo-sub{display:none}
+  .theme-btn{width:34px;height:34px}
+  .grid{gap:4px}
+  .gi{padding:5px 2px}
+  .gv{font-size:.74rem}
+  .gl{font-size:.52rem}
+  .dpg{grid-template-columns:1fr 1fr;gap:5px}
+  .dpv{font-size:.78rem}
+}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">
+    <div class="logo-icon">✈</div>
+    <div><div class="logo-text">SkyTrace</div><div class="logo-sub">Live Flight Tracker</div></div>
+  </div>
+  <div class="themes">
+    <button class="theme-btn active" data-t="">D</button>
+    <button class="theme-btn" data-t="light">L</button>
+    <button class="theme-btn" data-t="oled">O</button>
+    <button class="theme-btn" data-t="hc">HC</button>
+  </div>
+</header>
+<main>
+  <div class="pills">
+    <div class="pill active" data-points='[{"lat":51.5,"lon":10,"r":250},{"lat":40,"lon":-95,"r":250},{"lat":35,"lon":105,"r":250},{"lat":-15,"lon":25,"r":250},{"lat":-25,"lon":135,"r":250}]'>🌍 Global</div>
+    <div class="pill" data-points='[{"lat":51.5,"lon":10,"r":250},{"lat":48,"lon":16,"r":220},{"lat":41,"lon":28,"r":220}]'>🇪🇺 Europe</div>
+    <div class="pill" data-points='[{"lat":40,"lon":-95,"r":250},{"lat":34,"lon":-118,"r":220},{"lat":44,"lon":-76,"r":220}]'>🇺🇸 N. America</div>
+    <div class="pill" data-points='[{"lat":35,"lon":105,"r":250},{"lat":25,"lon":82,"r":250},{"lat":1,"lon":104,"r":220},{"lat":37,"lon":127,"r":220},{"lat":35,"lon":136,"r":220}]'>🌏 Asia</div>
+    <div class="pill" data-points='[{"lat":22,"lon":79,"r":250},{"lat":13,"lon":77,"r":200},{"lat":28,"lon":77,"r":200}]'>🇮🇳 India</div>
+    <div class="pill" data-points='[{"lat":25,"lon":55,"r":250},{"lat":33,"lon":44,"r":220}]'>🕌 Mid East</div>
+  </div>
+  <div class="srow">
+    <div class="swrap">
+      <span style="color:var(--mu);font-size:13px">🔍</span>
+      <input type="text" id="qInput" placeholder="Callsign, reg, country name, type… ↵" maxlength="24">
+    </div>
+    <button class="btn ol" id="spdUnitBtn" onclick="toggleSpdUnit()" title="Toggle speed unit">KT</button>
+    <button class="btn ol" id="altUnitBtn" onclick="toggleAltUnit()" title="Toggle altitude unit">FT</button>
+    <button class="btn" onclick="doSearch()">Search</button>
+  </div>
+  <div class="sbar">
+    <span style="display:flex;align-items:center"><span class="ldot" id="sDot"></span><span id="sMsg">Connecting…</span></span>
+    <span id="sCnt" style="font-family:'JetBrains Mono',monospace;flex-shrink:0"></span>
+  </div>
+  <div class="pbar"><div class="pfill" id="pFill"></div></div>
+
+  <div id="dPanel" class="dp"></div>
+  <div id="fList"></div>
+</main>
+<footer>© <span id="yr"></span> Manik Roy. All Rights Reserved.</footer>
+
+<script>
+document.getElementById('yr').textContent = new Date().getFullYear();
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ICAO24 hex-prefix → country {flag, name, origin}
+// 2-char prefixes; a few countries have multiple ranges so they repeat.
+// ─────────────────────────────────────────────────────────────────────────────
+const RAW = [
+ // prefix  flag   country              name origin
+ ['e0','🇫🇮','Finland',       'Old Norse Finnland — "land of the Sámi (Finn people)"; Finnish self-name is Suomi'],
+ ['e1','🇩🇰','Denmark',       'Old Norse Danmǫrk — "march of the Danes"; Danes may derive from Proto-Germanic *danaz'],
+ ['e2','🇸🇪','Sweden',        'Old Norse Svíþjóð → "Svea Rike" (realm of the Svear); Svear from Proto-Germanic *Swihoniz'],
+ ['e3','🇳🇴','Norway',        'Old Norse Norðvegr — "northern way"; a Viking coastal route along the western seaboard'],
+ ['e8','🇩🇪','Germany',       'Latin Germania (Roman name); self-name Deutschland from Theodisk — "of the common people"'],
+ ['e9','🇦🇹','Austria',       'Latin Marchia Orientalis — "eastern borderland"; German Österreich means "eastern realm"'],
+ ['ea','🇨🇭','Switzerland',   'From Schwyz canton — origin uncertain; possibly from Old High German swedan (burn/clear land)'],
+ ['eb','🇩🇪','Germany',       'Latin Germania; Deutschland from Old High German diutisc — "belonging to the people"'],
+ ['ec','🇳🇱','Netherlands',   'Dutch Nederlanden — "low lands"; the terrain famously lies at or below sea level'],
+ ['ee','🇧🇪','Belgium',       'Latin Belgica, after the Celtic Belgae tribe described by Julius Caesar in 58 BC'],
+ ['ef','🇱🇺','Luxembourg',    'Old High German Lucilinburhuc — "little fortress"; a small castle gave the nation its name'],
+ ['f0','🇫🇷','France',        'From the Franks — a Germanic tribe; "Frank" possibly means free man or from Frankish weapon'],
+ ['f4','🇪🇸','Spain',         'Latin Hispania; possibly Phoenician i-span-ya — "land of rabbits", noted by Carthaginian explorers'],
+ ['f8','🇵🇹','Portugal',      'From Portus Cale (modern Porto) — a Roman port city at the mouth of the Douro River'],
+ ['f9','🇮🇹','Italy',         'Oscan Víteliú — "land of young cattle"; or after the Vitali tribe; Romans later spread the name'],
+ ['fa','🇮🇹','Italy',         'Oscan Víteliú — "land of young cattle"; Roman expansion brought the name to the whole peninsula'],
+ ['40','🇬🇧','United Kingdom','British Isles from Celtic Prettanikai; UK from the 1707 Acts of Union uniting England & Scotland'],
+ ['41','🇬🇧','United Kingdom','Celtic Prettanikai (shining/tattooed ones?); "Britain" used since Julius Caesar\'s expeditions in 55 BC'],
+ ['42','🇬🇧','United Kingdom','United Kingdom of Great Britain & Northern Ireland — formed progressively 1707–1922'],
+ ['43','🇬🇧','United Kingdom','Great Britain from Welsh Prydain — Celtic root meaning "land of the Picts/painted people"'],
+ ['44','🇬🇧','United Kingdom','Anglo-Saxon Englaland — "land of the Angles"; Angles were a Germanic tribe from Angeln in Denmark'],
+ ['45','🇬🇧','United Kingdom','UK encompasses England, Scotland, Wales & N. Ireland; Scotland from Latin Scotia (land of the Scots)'],
+ ['47','🇮🇪','Ireland',       'Old Irish Ériu (goddess name) → Latin Hibernia; possibly from Proto-Celtic *Φīwerjon'],
+ ['49','🇵🇱','Poland',        'From the Polans tribe — "field dwellers" (pole = field in Slavic); settled the Warta River plain'],
+ ['4a','🇨🇿','Czech Republic','Čechy from the legendary patriarch Čech who led the Slavic Czechs into Bohemia; Bohemia from Boii tribe'],
+ ['4b','🇸🇰','Slovakia',      'Slovensko from Sloveni — all early Slavs who called themselves "those who speak (properly)"'],
+ ['4c','🇭🇺','Hungary',       'From the Onogurs — Turkic "ten tribes"; Hungarians call their country Magyarország (Magyar realm)'],
+ ['4d','🇷🇴','Romania',       'Latin Romanus — "Roman"; people trace ancestry to Roman colonists of Dacia province (2nd century AD)'],
+ ['4e','🇧🇬','Bulgaria',      'From the Bulgars — a Turkic/Hunnic people who merged with Slavs in the 7th century to form Bulgaria'],
+ ['4f','🇬🇷','Greece',        'Latin Graecia; Greeks call their land Hellas, after the mythological hero Hellen son of Deucalion'],
+ ['48','🇬🇧','United Kingdom','UK: England (Angles), Scotland (Scots from Scoti), Wales (Old English Wælas — "foreigners/Romans")'],
+ ['50','🇧🇷','Brazil',        'From Pau-Brasil (brazilwood tree) — the first Portuguese export; the glowing red wood recalled ember'],
+ ['51','🇦🇷','Argentina',     'Latin argentum — "silver"; Spanish explorers heard Andean legends of a mountain made of silver'],
+ ['52','🇨🇱','Chile',         'Disputed: Mapuche "chilli" (where the land ends), Aymara "cold", or imitation of bird call'],
+ ['53','🇨🇴','Colombia',      'Named after Christopher Columbus (Colón in Spanish) by Simón Bolívar\'s Gran Colombia in 1819'],
+ ['54','🇵🇪','Peru',          'From local chieftain "Birú" whose name Spanish explorers generalised to the entire Inca heartland'],
+ ['56','🇲🇽','Mexico',        'Nahuatl Mēxihco — "place of the Mexica people"; Mexica itself may mean "navel of the moon"'],
+ ['57','🇻🇪','Venezuela',     'Spanish "little Venice" — explorer Ojeda saw stilt houses over water resembling Venice in 1499'],
+ ['58','🇨🇴','Colombia',      'Named after Columbus; Gran Colombia founded 1819 by Bolívar, later split into several nations'],
+ ['60','🇪🇬','Egypt',         'Greek Aigyptos → possibly from Egyptian Hwt-ka-Ptah (mansion of the soul of Ptah), a Memphis temple'],
+ ['62','🇸🇩','Sudan',         'Arabic Bilād as-Sūdān — "land of the black (people)"; a vast medieval geographic term in Arab cartography'],
+ ['64','🇪🇹','Ethiopia',      'Greek Aithiopia — "land of the burnt-faced people"; one of the oldest recorded country name in world literature'],
+ ['65','🇸🇴','Somalia',       'From the Somali people; origin debated — possibly Cushitic "go milk" or named after ancestor Samaale'],
+ ['68','🇸🇳','Senegal',       'Possibly Wolof "Sunuu Gaal" (our canoe) or from Zenaga Berber people; the river gave the state its name'],
+ ['69','🇲🇱','Mali',          'From the Mali Empire (13th–16th c); Mandinka word possibly meaning "where the king resides"'],
+ ['6a','🇲🇦','Morocco',       'Portuguese Marrocos ← Marrakesh; Berber Murt Akush — "land of God" in the Tachelhit language'],
+ ['6b','🇩🇿','Algeria',       'From Algiers (al-Jazāʾir in Arabic) — "the islands", after rocky islets once visible in the bay'],
+ ['6c','🇹🇳','Tunisia',       'From Tunis; Berber origin — possibly "encampment" or named after the Phoenician goddess Tanit'],
+ ['6d','🇱🇾','Libya',         'Greek Libúē — one of the oldest country names; possibly from the Berber Libu tribe of North Africa'],
+ ['6e','🇨🇲','Cameroon',      'Portuguese Rio dos Camarões — "river of prawns"; explorers found abundant shrimp in the Wouri River'],
+ ['6f','🇳🇬','Nigeria',       'From the Niger River; "Niger" possibly Tuareg gher n gheren — "river of rivers"'],
+ ['0b','🇿🇦','South Africa',  'Descriptive colonial geographical name — the southernmost country of the African continent'],
+ ['0c','🇳🇬','Nigeria',       'Niger River gives the name; the river name may come from Tuareg egerew n-igerewen (great river)'],
+ ['0d','🇰🇪','Kenya',         'From Mount Kenya; Kikuyu Kirinyaga — "white mountain" (snow-capped peak visible from afar)'],
+ ['0e','🇪🇹','Ethiopia',      'Greek Aithiops — "burnt face"; Homer used it; one of the few African countries with an ancient Greek name'],
+ ['0f','🇬🇭','Ghana',         'Named after the medieval Ghana Empire; "ghana" means "warrior king" in the Soninke language'],
+ ['70','🇷🇺','Russia',        'From the Rus\' people — Norse Varangian traders; possibly Old Norse róðr (rowing) or Roslagen region'],
+ ['71','🇷🇺','Russia',        'Rus\' state founded ~862 AD; Russia from medieval Latin Ruthenia → Modern Latin Russia'],
+ ['72','🇷🇺','Russia',        'Russian self-name Rossiya from Rus\'; Rus\' itself possibly from Finnish Ruotsi (Sweden)'],
+ ['73','🇷🇺','Russia',        'Old Church Slavonic Rusĭ; the Varangian Rus\' established Kyiv and later Muscovy'],
+ ['74','🇷🇺','Russia',        'Muscovy expanded to Russia; Moscow from the Moskva River — origin uncertain, possibly Finno-Ugric'],
+ ['75','🇷🇺','Russia',        'Russian Federation since 1991; name traces to 9th-century Norse-Slavic Rus\' principalities'],
+ ['76','🇺🇦','Ukraine',       'Old East Slavic Ukraina — "borderland/frontier"; later evolved to mean the distinct Ukrainian homeland'],
+ ['77','🇷🇺','Russia',        'Russia from Rus\'; "Rus\'" possibly from Old Norse rowing crews that navigated the Dnieper River'],
+ ['78','🇨🇳','China',         'From Sanskrit Cīna → Latin Sina; refers to the Qin dynasty (221–206 BC) that first unified China'],
+ ['79','🇨🇳','China',         'Chinese self-name Zhōngguó — "middle kingdom/central state"; Qin dynasty gave the Western name'],
+ ['7a','🇨🇳','China',         'Zhongguo ("middle kingdom") used since the Zhou dynasty; "China" entered English via Portuguese'],
+ ['7b','🇨🇳','China',         'Qin (Chin) dynasty → Sanskrit Cina → Arabic Sin → Latin Sina → Portuguese China → English China'],
+ ['7c','🇦🇺','Australia',     'Latin Terra Australis Incognita — "unknown southern land"; the hypothetical continent Europeans sought'],
+ ['7d','🇦🇺','Australia',     'Matthew Flinders proposed "Australia" in 1804 from Latin australis; adopted officially in 1824'],
+ ['80','🇮🇳','India',         'Sanskrit Sindhu (Indus River) → Old Persian Hindu → Greek Indos → Latin India — "land of the Indus"'],
+ ['81','🇮🇳','India',         'Bharat (Hindi self-name) from King Bharata of the Mahabharata; India from the Indus via Persian Hind'],
+ ['82','🇮🇳','India',         'Indus → India: the river name became the country name via Achaemenid Persian and then Greek usage'],
+ ['83','🇮🇳','India',         '"Hindustan" (Persian name) from Hindu (Indus) + stan (land); India from Latin and Greek Indus'],
+ ['84','🇮🇳','India',         'Bharatavarsha — ancient Sanskrit name for the subcontinent; India used internationally from Latin'],
+ ['85','🇱🇰','Sri Lanka',     'Sanskrit Śrī Laṅkā — "resplendent island"; Lanka may mean "island" in old Dravidian languages'],
+ ['86','🇨🇳','China',         'Zhongguo → "Middle Kingdom"; first used in the Western Zhou period (1046–771 BC)'],
+ ['87','🇯🇵','Japan',         'Old Chinese Cipangu → Nihon/Nippon — "origin of the sun" (日本); Marco Polo brought name to Europe'],
+ ['88','🇯🇵','Japan',         'Japanese Nippon — 日本 "sun-origin"; the character 日 (sun) reflects Japan\'s eastern position from China'],
+ ['89','🇰🇷','South Korea',   'From the Goryeo dynasty (918–1392 AD); Western "Korea" is a rendering of Goryeo via Persian Caucoli'],
+ ['8a','🇰🇷','South Korea',   'Joseon dynasty preceded Goryeo; "Korea" entered European maps via 13th-century Persian and Arab sources'],
+ ['8b','🇰🇵','North Korea',   'Same etymology as South Korea — from Goryeo; divided at the 38th parallel after World War II in 1945'],
+ ['b0','🇲🇾','Malaysia',      'From "Melayu" people; possibly Tamil malai (hill) + ur (city) — "hill city"; or Sanskrit "garland"'],
+ ['b1','🇮🇩','Indonesia',     'Greek Indos (India) + nesos (island) — "Indian islands"; coined by ethnologist George Earl in 1850'],
+ ['b2','🇵🇭','Philippines',   'Named for King Philip II of Spain by Ruy López de Villalobos in 1543 during the Spanish expedition'],
+ ['b3','🇻🇳','Vietnam',       'Chinese Nányuè/Yuenam — "south of the Viet people"; Viet (Việt) means "to go beyond the border"'],
+ ['b4','🇹🇭','Thailand',      'Thai Mueang Thai — "land of the Thai/free people"; Tai root means "free" across the Tai-Kadai family'],
+ ['b5','🇸🇬','Singapore',     'Sanskrit Singapura — "lion city" (simha = lion, pura = city); Sang Nila Utama reportedly saw a lion in 1299'],
+ ['b6','🇧🇩','Bangladesh',    'Bengali Bangla (Bengal) + desh (land) — "land of Bengal"; Bengal possibly from Vanga kingdom c. 1000 BC'],
+ ['b8','🇲🇲','Myanmar',       'Burmese Mranma Prañ — the formal name of the Bamar people; "Burma" is the colloquial pronunciation'],
+ ['c0','🇨🇦','Canada',        'Huron-Iroquois "kanata" — "village/settlement"; Jacques Cartier recorded it in 1535 near modern Québec'],
+ ['c1','🇨🇦','Canada',        '"Kanata" generalised from a Laurentian village name to the whole territory by French explorers'],
+ ['c2','🇨🇦','Canada',        'Canada → officially named British North America Act 1867; kanata meaning expanded to mean homeland'],
+ ['c3','🇨🇦','Canada',        'Cartier used "Canada" for land along the St. Lawrence; French pronunciation preserved the Iroquoian word'],
+ ['c8','🇳🇿','New Zealand',   'Named by Dutch explorer Tasman in 1642 after Zeeland province in the Netherlands; Māori name Aotearoa'],
+ ['c9','🇳🇿','New Zealand',   'Māori Aotearoa — "land of the long white cloud"; the Dutch name New Zealand was adopted internationally'],
+ ['34','🇮🇷','Iran',          'Old Persian Ērān — "land of the Aryans"; Aryan from Sanskrit ārya (noble). Persia replaced by Iran in 1935'],
+ ['32','🇮🇶','Iraq',          'Arabic al-ʿIrāq — possibly from Sumerian Uruk, or meaning "deep-rooted/river bank" in Arabic'],
+ ['33','🇮🇱','Israel',        'Hebrew Yisrael — "one who strives with God"; Jacob was renamed Israel after wrestling the angel (Genesis 32)'],
+ ['35','🇾🇪','Yemen',         'Arabic al-Yaman — possibly from yamīn (right hand, the south when facing sunrise); ancient kingdom of Saba'],
+ ['36','🇸🇾','Syria',         'Greek Syría — possibly from Assyria (Aššur); some derive it from the Hurrian city Suri'],
+ ['37','🇯🇴','Jordan',        'Named after the Jordan River; Hebrew Yarden — "one who descends", describing the fast-flowing descent'],
+ ['38','🇵🇰','Pakistan',      'Acronym coined 1933: P(unjab) A(fghan/NWFP) K(ashmir) I(ran) S(indh) TAN(Baluchistan) + "pak" = pure'],
+ ['39','🇦🇫','Afghanistan',   'Persian — "land of the Afghans"; Afghan possibly from Sanskrit Ashvaka — "horsemen/horse people"'],
+ ['3a','🇸🇦','Saudi Arabia',  'From the Al Saud ruling dynasty; Arabia from Greek Aravia — the Arab heartland of the peninsula'],
+ ['06','🇸🇦','Saudi Arabia',  'Saudi from House of Saud (18th c.); Arabia used by Greeks & Romans for the entire peninsula'],
+ ['07','🇦🇪','UAE',           'Seven emirates federated 1971; "emirate" from Arabic amīr — commander/prince; "united" added at independence'],
+ ['08','🇹🇷','Turkey',        'Medieval Latin Turchia; Türkiye from the Türk people — origin uncertain, possibly "strong/vigorous"'],
+ ['01','🇦🇲','Armenia',       'Exonym possibly from Aramaean Urartu; Armenian self-name Hayastan — from legendary patriarch Hayk'],
+ ['02','🇦🇿','Azerbaijan',    'Old Median Atropatene — "land of the keeper of holy fire"; Zoroastrian fire temples once abounded here'],
+ ['03','🇬🇪','Georgia',       'Named after St. George, patron saint; Georgian self-name Sakartvelo from Kartvelian people'],
+ ['04','🇹🇲','Turkmenistan',  'Persian — "land of the Turkmens"; Türkmen may mean "Turk-like" or "pure Turk" in Turkic'],
+ ['05','🇰🇿','Kazakhstan',    'Kazakh "qazaq" (free wanderer/horseman) + Persian "-stan" (land) — "land of the free wanderers"'],
+ ['a0','🇺🇸','United States', 'Named after Amerigo Vespucci; cartographer Waldseemüller coined "America" in 1507 for the New World'],
+ ['a1','🇺🇸','United States', '"America" from Americus Vespuccius (Latin); Vespucci\'s letters proved the New World was a separate continent'],
+ ['a2','🇺🇸','United States', '"United States of America" — 13 colonies united 1776; America from Florentine explorer Amerigo Vespucci'],
+ ['a3','🇺🇸','United States', '"States" from Latin status (standing/condition); Vespucci\'s explorations 1499–1502 inspired the name America'],
+ ['a4','🇺🇸','United States', 'Waldseemüller map (1507) first named the continent "America" after Amerigo Vespucci\'s voyages'],
+ ['a5','🇺🇸','United States', '"United" reflects the federal union of former British colonies; America honours Vespucci not Columbus'],
+ ['a6','🇺🇸','United States', 'USA — the nation adopted the name America though Columbus reached the islands; Vespucci mapped the mainland'],
+ ['a7','🇺🇸','United States', 'US spans 50 states; America from Amerigo (variant of Germanic Amalric — "work power/ruler")'],
+ ['a8','🇺🇸','United States', '"States" originally meant self-governing territories; America ultimately from Amalric via Italian Amerigo'],
+ ['a9','🇺🇸','United States', 'Continental United States from 1776; Alaska (1867) and Hawaii (1959) completed the 50 states'],
+ ['aa','🇺🇸','United States', 'American comes from Americus — Latinised Amerigo; both Americas named after one Italian navigator'],
+ ['ab','🇺🇸','United States', 'Amerigo Vespucci\'s 1503 letter Mundus Novus (New World) convinced mapmakers a new continent existed'],
+ ['ac','🇺🇸','United States', 'Martin Waldseemüller proposed "America" in his 1507 Cosmographiae Introductio; name quickly caught on'],
+];
+
+// Build prefix → info map (2-char keys, simple O(1) lookup)
+const CMAP = new Map(RAW.map(([p,f,n,o]) => [p, {flag:f, name:n, origin:o}]));
+
+function getCountry(hex) {
+  if (!hex) return null;
+  return CMAP.get(hex.toLowerCase().replace('~','').slice(0,2)) || null;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Airline ICAO callsign-prefix → airline name (3-letter codes per ICAO Doc 8585)
+// The `flight` field looks like "UAL123 " — first 3 letters = airline code
+// ─────────────────────────────────────────────────────────────────────────────
+const AIRLINES = {
+  AAL:'American Airlines', DAL:'Delta Air Lines', UAL:'United Airlines', SWA:'Southwest Airlines',
+  JBU:'JetBlue Airways', ASA:'Alaska Airlines', FFT:'Frontier Airlines', NKS:'Spirit Airlines',
+  AAY:'Allegiant Air', HAL:'Hawaiian Airlines', ACA:'Air Canada', WJA:'WestJet',
+  BAW:'British Airways', VIR:'Virgin Atlantic', EZY:'easyJet', RYR:'Ryanair',
+  WZZ:'Wizz Air', AFR:'Air France', KLM:'KLM Royal Dutch Airlines', DLH:'Lufthansa',
+  EWG:'Eurowings', IBE:'Iberia', VLG:'Vueling', TAP:'TAP Air Portugal',
+  SAS:'Scandinavian Airlines', FIN:'Finnair', AUA:'Austrian Airlines', SWR:'Swiss International Air Lines',
+  THY:'Turkish Airlines', PGT:'Pegasus Airlines', AFL:'Aeroflot', LOT:'LOT Polish Airlines',
+  CSA:'Czech Airlines', ROT:'TAROM', BTI:'Air Baltic', UAE:'Emirates',
+  QTR:'Qatar Airways', ETD:'Etihad Airways', SVA:'Saudia', MSR:'EgyptAir',
+  RJA:'Royal Jordanian', GFA:'Gulf Air', KAC:'Kuwait Airways', MEA:'Middle East Airlines',
+  AIC:'Air India', IGO:'IndiGo', SEJ:'SpiceJet', GOW:'GoAir',
+  VTI:'Vistara', AXB:'Air India Express', UAB:'Akasa Air', CPA:'Cathay Pacific',
+  CCA:'Air China', CSN:'China Southern Airlines', CES:'China Eastern Airlines', HDA:'Hainan Airlines',
+  CXA:'Xiamen Airlines', JAL:'Japan Airlines', ANA:'All Nippon Airways', JJP:'Jetstar Japan',
+  KAL:'Korean Air', AAR:'Asiana Airlines', CAL:'China Airlines', EVA:'EVA Air',
+  SIA:'Singapore Airlines', SQC:'Singapore Airlines Cargo', MAS:'Malaysia Airlines', AXM:'AirAsia',
+  TGW:'Thai AirAsia', THA:'Thai Airways International', GIA:'Garuda Indonesia', CTV:'Citilink',
+  PAL:'Philippine Airlines', CEB:'Cebu Pacific', VJC:'VietJet Air', HVN:'Vietnam Airlines',
+  QFA:'Qantas', JST:'Jetstar Airways', VOZ:'Virgin Australia', ANZ:'Air New Zealand',
+  LAN:'LATAM Airlines', TAM:'LATAM Brasil', GLO:'GOL Linhas Aéreas', AZU:'Azul Brazilian Airlines',
+  AVA:'Avianca', ARG:'Aerolíneas Argentinas', AMX:'Aeroméxico', VOI:'Volaris',
+  ETH:'Ethiopian Airlines', SAA:'South African Airways', KQA:'Kenya Airways', RAM:'Royal Air Maroc',
+  DAH:'Air Algérie', TUN:'Tunisair', UPS:'UPS Airlines', FDX:'FedEx Express',
+  GTI:'Atlas Air', CKS:'Kalitta Air', BOX:'AirBridgeCargo', GEC:'Lufthansa Cargo',
+  CLX:'Cargolux', ABW:'Air Belgium', NCA:'Nippon Cargo Airlines', QFE:'Qantas Freight',
+};
+
+function getAirline(flightStr) {
+  if (!flightStr) return null;
+  const code = flightStr.trim().toUpperCase().slice(0, 3);
+  return AIRLINES[code] || null;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// State
+// ─────────────────────────────────────────────────────────────────────────────
+const REFRESH_MS = 10000;
+let allFlights   = [];
+let flightMap    = new Map();
+let refreshTimer = null;
+let tickTimer    = null;
+let rafId        = null;
+let pStart       = 0;
+let currentPts   = JSON.parse(document.querySelector('.pill.active').dataset.points);
+let pinnedHex    = null;
+let isFirst      = true;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Themes & pills
+// ─────────────────────────────────────────────────────────────────────────────
+document.querySelectorAll('.theme-btn').forEach(b => b.addEventListener('click', () => {
+  document.documentElement.setAttribute('data-theme', b.dataset.t);
+  document.querySelectorAll('.theme-btn').forEach(x => x.classList.remove('active'));
+  b.classList.add('active');
+}));
+document.querySelectorAll('.pill').forEach(p => p.addEventListener('click', () => {
+  document.querySelectorAll('.pill').forEach(x => x.classList.remove('active'));
+  p.classList.add('active');
+  currentPts = JSON.parse(p.dataset.points);
+  pinnedHex = null;
+  document.getElementById('qInput').value = '';
+  document.getElementById('dPanel').classList.remove('show');
+  isFirst = true;
+  startCycle();
+}));
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Unit systems — independent toggles:
+//   unitKm  → speed: false = Knots,  true = Km/h
+//   unitM   → altitude & vertical rate: false = Feet/fpm, true = Metres/m-min
+// ─────────────────────────────────────────────────────────────────────────────
+let unitKm = false;
+let unitM  = false;
+
+function toggleSpdUnit() {
+  unitKm = !unitKm;
+  document.getElementById('spdUnitBtn').textContent = unitKm ? 'KM/H' : 'KT';
+  localStorage.setItem('skytrace-spdunit', unitKm ? 'km' : 'kt');
+  refreshUnits();
+}
+function toggleAltUnit() {
+  unitM = !unitM;
+  document.getElementById('altUnitBtn').textContent = unitM ? 'M' : 'FT';
+  localStorage.setItem('skytrace-altunit', unitM ? 'm' : 'ft');
+  refreshUnits();
+}
+function refreshUnits() {
+  if (!isFirst) renderList();          // re-render visible cards in new units
+  if (pinnedHex) { const f = flightMap.get(pinnedHex); if (f) renderDetail(f, false); }
+}
+(function initUnits() {
+  try {
+    unitKm = localStorage.getItem('skytrace-spdunit') === 'km';
+    unitM  = localStorage.getItem('skytrace-altunit') === 'm';
+    document.getElementById('spdUnitBtn').textContent = unitKm ? 'KM/H' : 'KT';
+    document.getElementById('altUnitBtn').textContent = unitM ? 'M' : 'FT';
+  } catch(_) {}
+})();
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Formatters — source data: alt_baro/alt_geom in FEET, gs/tas in KNOTS, baro_rate in FPM
+// Converted on display per toggle: ft→m (×0.3048), kt→km/h (×1.852), fpm→m/min (×0.3048)
+// ─────────────────────────────────────────────────────────────────────────────
+function fmtAlt(f, extraFt) {
+  if (f.alt_baro === 'ground') return 'Ground';
+  let v = f.alt_baro != null ? Number(f.alt_baro) : (f.alt_geom != null ? Number(f.alt_geom) : null);
+  if (v == null || isNaN(v)) return '—';
+  const totalFt = v + (extraFt || 0);
+  return unitM
+    ? Math.round(totalFt * 0.3048).toLocaleString() + ' m'
+    : Math.round(totalFt).toLocaleString() + ' ft';
+}
+function fmtSpd(kts) {
+  if (kts == null) return '—';
+  const n = Number(kts);
+  if (isNaN(n)) return '—';
+  const v = Math.max(0, n);
+  return unitKm
+    ? Math.round(v * 1.852) + ' km/h'
+    : Math.round(v) + ' kts';
+}
+function fmtVspd(fpm) {
+  if (fpm == null) return '—';
+  const n = Number(fpm);
+  if (isNaN(n) || Math.abs(n) < 64) return '⟷ Level';
+  const arrow = n > 0 ? '↑ ' : '↓ ';
+  return unitM
+    ? arrow + Math.abs(Math.round(n * 0.3048)).toLocaleString() + ' m/min'
+    : arrow + Math.abs(Math.round(n)).toLocaleString() + ' fpm';
+}
+function compass(deg) {
+  if (deg == null) return '—';
+  return ['N','NE','E','SE','S','SW','W','NW'][Math.round(Number(deg) / 45) % 8];
+}
+function fmtHdg(f) {
+  return f.track != null ? Math.round(Number(f.track)) + '° ' + compass(f.track) : '—';
+}
+function isGnd(f) { return f.alt_baro === 'ground'; }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Dead-reckoning: extrapolate altitude & speed from last fetch time
+// ─────────────────────────────────────────────────────────────────────────────
+function deadReckon(f) {
+  if (isGnd(f) || !f._at) return { extraFt: 0 };
+  const ageSec = (Date.now() - f._at) / 1000;
+  const vr = f.baro_rate != null ? Number(f.baro_rate) : (f.geom_rate != null ? Number(f.geom_rate) : 0);
+  return { extraFt: vr * ageSec / 60 };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Status / UI helpers
+// ─────────────────────────────────────────────────────────────────────────────
+function setStatus(msg, cnt, err) {
+  document.getElementById('sDot').className = err ? 'edot' : 'ldot';
+  document.getElementById('sMsg').textContent = msg;
+  document.getElementById('sCnt').textContent = cnt || '';
+}
+function showLoader() {
+  document.getElementById('fList').innerHTML =
+    '<div class="loader"><div class="spin"></div>Loading live flights…</div>';
+}
+function showEmpty(msg) {
+  document.getElementById('fList').innerHTML = `<div class="empty">✈<br><br>${msg}</div>`;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// rAF progress bar
+// ─────────────────────────────────────────────────────────────────────────────
+function startProgress() {
+  pStart = performance.now();
+  if (rafId) cancelAnimationFrame(rafId);
+  const bar = document.getElementById('pFill');
+  function tick(now) {
+    const pct = Math.max(0, 1 - (now - pStart) / REFRESH_MS);
+    bar.style.width = (pct * 100) + '%';
+    if (pct > 0) rafId = requestAnimationFrame(tick);
+  }
+  rafId = requestAnimationFrame(tick);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// LIVE TICKER — fires every second, updates alt & speed in every visible card
+// Uses vertical rate dead-reckoning for altitude between API refreshes
+// ─────────────────────────────────────────────────────────────────────────────
+function startTicker() {
+  clearInterval(tickTimer);
+  tickTimer = setInterval(() => {
+    document.querySelectorAll('.fc[data-hex]').forEach(card => {
+      const f = flightMap.get(card.dataset.hex);
+      if (!f || isGnd(f)) return;
+      const { extraFt } = deadReckon(f);
+      // Altitude
+      const aEl = card.querySelector('[data-f="alt"]');
+      if (aEl) {
+        const nv = fmtAlt(f, extraFt);
+        if (aEl.textContent !== nv) {
+          aEl.textContent = nv;
+          aEl.classList.add('flash');
+          setTimeout(() => aEl.classList.remove('flash'), 380);
+        }
+      }
+      // Speed — direct from API (knots, real value)
+      const sEl = card.querySelector('[data-f="spd"]');
+      if (sEl) sEl.textContent = fmtSpd(f.gs);
+    });
+    // Update open detail panel live values too
+    if (pinnedHex) {
+      const f = flightMap.get(pinnedHex);
+      if (f && !isGnd(f)) {
+        const { extraFt } = deadReckon(f);
+        const da = document.getElementById('dp-alt');
+        if (da) {
+          const nv = fmtAlt(f, extraFt);
+          if (da.textContent !== nv) { da.textContent = nv; flashEl(da); }
+        }
+        const ds = document.getElementById('dp-spd');
+        if (ds) { const nv = fmtSpd(f.gs); if (ds.textContent !== nv) ds.textContent = nv; }
+        const dvr = document.getElementById('dp-vr');
+        if (dvr) dvr.textContent = fmtVspd(f.baro_rate ?? f.geom_rate);
+        const dh = document.getElementById('dp-hdg');
+        if (dh) dh.textContent = fmtHdg(f);
+      }
+    }
+  }, 1000);
+}
+
+function flashEl(el) {
+  el.classList.add('flash');
+  setTimeout(() => el.classList.remove('flash'), 380);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Fetch: staggered point queries (1.1 s apart to respect 1 req/s limit)
+// ─────────────────────────────────────────────────────────────────────────────
+async function fetchRegion(pts) {
+  const BASE = 'https://api.airplanes.live/v2/point';
+  const results = [];
+  for (let i = 0; i < pts.length; i++) {
+    if (i > 0) await new Promise(r => setTimeout(r, 1100));
+    try {
+      const {lat, lon, r} = pts[i];
+      const res = await fetch(`${BASE}/${lat}/${lon}/${r}`, {signal: AbortSignal.timeout(12000)});
+      if (res.ok) { const d = await res.json(); if (d.ac) results.push(...d.ac); }
+    } catch(_) {}
+  }
+  const now = Date.now();
+  const map = new Map();
+  for (const ac of results) { if (ac.hex) { ac._at = now; map.set(ac.hex, ac); } }
+  return [...map.values()];
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Main load cycle
+// ─────────────────────────────────────────────────────────────────────────────
+async function loadFlights() {
+  clearTimeout(refreshTimer);
+  if (isFirst) { setStatus('Fetching live data…', ''); showLoader(); }
+  startProgress();
+  try {
+    const ac = await fetchRegion(currentPts);
+    allFlights = ac;
+    flightMap = new Map(ac.map(f => [f.hex, f]));
+    const ts = new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit', second:'2-digit'});
+    setStatus('Live · ' + ts, ac.length + ' aircraft');
+    if (isFirst) { isFirst = false; renderList(); startTicker(); }
+    else updateInPlace();
+  } catch(e) {
+    setStatus('⚠ ' + (e.message || 'Error'), '', true);
+    if (isFirst) showEmpty('Could not reach airplanes.live.<br>Check your connection and try again.');
+  }
+  refreshTimer = setTimeout(loadFlights, REFRESH_MS);
+}
+
+function startCycle() {
+  clearTimeout(refreshTimer); clearInterval(tickTimer);
+  if (rafId) cancelAnimationFrame(rafId);
+  allFlights = []; flightMap = new Map(); isFirst = true;
+  loadFlights();
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Card HTML
+// ─────────────────────────────────────────────────────────────────────────────
+function cardHTML(f) {
+  const cs  = (f.flight || f.hex || 'UNKNOWN').trim();
+  const gnd = isGnd(f);
+  const c   = getCountry(f.hex);
+  const al  = getAirline(f.flight);
+  const reg = f.r || '', typ = f.t || '';
+  return `<div class="fc" data-hex="${f.hex}" onclick="openDetail('${f.hex}')">
+    <div class="fc-top">
+      <span class="cs">${cs}</span>
+      <span class="badge ${gnd ? 'gnd' : 'air'}">${gnd ? '🛑 Ground' : '🟢 Airborne'}</span>
+    </div>
+    ${al ? `<div class="arow">🏢 ${al}</div>` : ''}
+    ${c ? `<div class="crow">
+      <span class="cflag">${c.flag}</span>
+      <span class="cname">${c.name}</span>
+      <span class="cori">— ${c.origin}</span>
+    </div>` : ''}
+    <div class="grid">
+      <div class="gi"><div class="gl">Alt (Baro)</div><div class="gv" data-f="alt">${gnd ? 'Ground' : fmtAlt(f)}</div></div>
+      <div class="gi"><div class="gl">Speed (GS)</div><div class="gv" data-f="spd">${fmtSpd(f.gs)}</div></div>
+      <div class="gi"><div class="gl">Heading</div><div class="gv">${fmtHdg(f)}</div></div>
+    </div>
+    <div class="meta">
+      ${reg ? `<span>✈ ${reg}</span>` : ''}
+      ${typ ? `<span>📋 ${typ}</span>` : ''}
+      <span style="margin-left:auto;opacity:.4;font-size:.62rem">${f.hex || ''}</span>
+    </div>
+  </div>`;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Render full list
+// ─────────────────────────────────────────────────────────────────────────────
+function renderList() {
+  const q = document.getElementById('qInput').value.toLowerCase().trim();
+  let list = q
+    ? allFlights.filter(f => {
+        const c = getCountry(f.hex);
+        const al = getAirline(f.flight);
+        return (f.flight||'').toLowerCase().includes(q) ||
+               (f.r||'').toLowerCase().includes(q) ||
+               (f.t||'').toLowerCase().includes(q) ||
+               (f.hex||'').toLowerCase().includes(q) ||
+               (c && c.name.toLowerCase().includes(q)) ||
+               (al && al.toLowerCase().includes(q));
+      })
+    : allFlights.slice(0, 60);
+  if (!list.length) {
+    showEmpty(q ? `No aircraft match "<b>${q}</b>"` : 'No aircraft found.<br>Try another region or wait for refresh.');
+    return;
+  }
+  document.getElementById('fList').innerHTML = list.map(cardHTML).join('');
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// In-place update: only update heading & badges; ticker handles alt/spd
+// ─────────────────────────────────────────────────────────────────────────────
+function updateInPlace() {
+  const q = document.getElementById('qInput').value.toLowerCase().trim();
+  if (q) { isFirst = true; renderList(); isFirst = false; return; }
+  document.querySelectorAll('.fc[data-hex]').forEach(card => {
+    const f = flightMap.get(card.dataset.hex);
+    if (!f) return;
+    const gnd = isGnd(f);
+    const badge = card.querySelector('.badge');
+    if (badge) { badge.className = 'badge ' + (gnd ? 'gnd' : 'air'); badge.textContent = gnd ? '🛑 Ground' : '🟢 Airborne'; }
+  });
+  // Also refresh pinned detail
+  if (pinnedHex) { const f = flightMap.get(pinnedHex); if (f) renderDetail(f, true); }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Current location — reverse geocode lat/lon via BigDataCloud (free, no key)
+// ─────────────────────────────────────────────────────────────────────────────
+const locCache = new Map(); // "lat,lon" rounded → place string
+async function fetchLocation(lat, lon) {
+  const key = lat.toFixed(1) + ',' + lon.toFixed(1); // ~11km grid — good cache hit rate over open ocean/land
+  if (locCache.has(key)) return locCache.get(key);
+  try {
+    const url = `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=en`;
+    const res = await fetch(url, {signal: AbortSignal.timeout(8000)});
+    if (!res.ok) throw new Error();
+    const d = await res.json();
+    const city = d.city || d.locality || '';
+    const region = d.principalSubdivision || '';
+    const country = d.countryName || '';
+    let place;
+    if (!country) place = 'Over open ocean';
+    else place = [city, region, country].filter(Boolean).join(', ');
+    locCache.set(key, place);
+    return place;
+  } catch(_) {
+    return null;
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Route (origin → destination) — via adsbdb.com, free, no key, keyed by ICAO callsign
+// ─────────────────────────────────────────────────────────────────────────────
+const routeCache = new Map();
+async function fetchRoute(callsign) {
+  const cs = (callsign || '').trim().toUpperCase();
+  if (!cs) return null;
+  if (routeCache.has(cs)) return routeCache.get(cs);
+  try {
+    const res = await fetch(`https://api.adsbdb.com/v0/callsign/${cs}`, {signal: AbortSignal.timeout(8000)});
+    if (!res.ok) throw new Error();
+    const d = await res.json();
+    const r = d?.response?.flightroute;
+    if (!r) { routeCache.set(cs, null); return null; }
+    const route = {
+      origin: r.origin ? { name: r.origin.name, city: r.origin.municipality, iata: r.origin.iata_code, country: r.origin.country_name } : null,
+      destination: r.destination ? { name: r.destination.name, city: r.destination.municipality, iata: r.destination.iata_code, country: r.destination.country_name } : null
+    };
+    routeCache.set(cs, route);
+    return route;
+  } catch(_) {
+    routeCache.set(cs, null);
+    return null;
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Detail panel
+// ─────────────────────────────────────────────────────────────────────────────
+function openDetail(hex) {
+  pinnedHex = hex;
+  const f = flightMap.get(hex);
+  if (f) renderDetail(f, false);
+}
+
+function renderDetail(f, updateOnly) {
+  const cs  = (f.flight || f.hex || 'UNKNOWN').trim();
+  const gnd = isGnd(f);
+  const c   = getCountry(f.hex);
+  const al  = getAirline(f.flight);
+  const altG = f.alt_geom != null ? Number(f.alt_geom).toLocaleString() + ' ft' : '—';
+  const panel = document.getElementById('dPanel');
+
+  if (updateOnly) {
+    // Just patch the static fields (not alt/spd — ticker handles those)
+    const hEl = panel.querySelector('[data-dp="hdg"]');
+    if (hEl) hEl.textContent = fmtHdg(f);
+    const vrEl = panel.querySelector('[data-dp="vr"]');
+    if (vrEl) vrEl.textContent = fmtVspd(f.baro_rate ?? f.geom_rate);
+    // Refresh current-location text as the aircraft moves (cached per ~11km grid cell)
+    if (f.lat != null && f.lon != null) {
+      const myHex = f.hex;
+      fetchLocation(f.lat, f.lon).then(place => {
+        if (pinnedHex !== myHex) return;
+        const el = document.getElementById('dp-loc');
+        if (el) el.textContent = place ? '📍 Currently over: ' + place : '📍 Location unavailable';
+      });
+    }
+    return;
+  }
+
+  panel.innerHTML = `
+    <div class="dph">
+      <div>
+        <div class="dpcs">${cs}</div>
+        <div class="dpmu">ICAO24: ${f.hex||'—'} · Squawk: ${f.squawk||'—'} · ${f.type||'—'}</div>
+      </div>
+      <button class="btn ol" style="padding:0;width:40px;height:40px;min-height:40px;flex-shrink:0;font-size:1rem" onclick="closeDetail()" aria-label="Close">✕</button>
+    </div>
+    ${c ? `<div class="dp-crow">
+      <span class="dp-cflag">${c.flag}</span>
+      <div>
+        <div class="dp-cname">${c.name}</div>
+        <div class="dp-cori">Name origin: ${c.origin}</div>
+      </div>
+    </div>` : ''}
+    <div class="dp-locrow" id="dp-loc">📍 Locating current position…</div>
+    <div class="dp-routerow" id="dp-route">🧭 Looking up flight route…</div>
+    <div class="dpg">
+      <div class="dpi"><div class="dpl">Airline</div><div class="dpv">${al || '—'}</div></div>
+      <div class="dpi"><div class="dpl">Registration</div><div class="dpv">${f.r||'—'}</div></div>
+      <div class="dpi"><div class="dpl">Aircraft Type</div><div class="dpv">${f.t||'—'}</div></div>
+      <div class="dpi"><div class="dpl">Status</div><div class="dpv">${gnd?'🛑 Ground':'✈ Airborne'}</div></div>
+      <div class="dpi"><div class="dpl">Alt Baro — live</div><div class="dpv" id="dp-alt">${gnd?'Ground':fmtAlt(f)}</div></div>
+      <div class="dpi"><div class="dpl">Alt Geometric</div><div class="dpv">${altG}</div></div>
+      <div class="dpi"><div class="dpl">Ground Speed — live</div><div class="dpv" id="dp-spd">${fmtSpd(f.gs)}</div></div>
+      <div class="dpi"><div class="dpl">True Airspeed</div><div class="dpv">${fmtSpd(f.tas)}</div></div>
+      <div class="dpi"><div class="dpl">Heading / Track</div><div class="dpv" id="dp-hdg" data-dp="hdg">${fmtHdg(f)}</div></div>
+      <div class="dpi"><div class="dpl">Vert. Rate</div><div class="dpv" id="dp-vr" data-dp="vr">${fmtVspd(f.baro_rate??f.geom_rate)}</div></div>
+      <div class="dpi"><div class="dpl">Latitude</div><div class="dpv">${f.lat!=null?Number(f.lat).toFixed(4)+'°':'—'}</div></div>
+      <div class="dpi"><div class="dpl">Longitude</div><div class="dpv">${f.lon!=null?Number(f.lon).toFixed(4)+'°':'—'}</div></div>
+      <div class="dpi"><div class="dpl">RSSI (Signal)</div><div class="dpv">${f.rssi!=null?f.rssi+' dBFS':'—'}</div></div>
+      <div class="dpi"><div class="dpl">Messages</div><div class="dpv">${f.messages!=null?Number(f.messages).toLocaleString():'—'}</div></div>
+      <div class="dpi" style="grid-column:1/-1"><div class="dpl">Nav Modes</div><div class="dpv">${(f.nav_modes||[]).join(', ')||'—'}</div></div>
+    </div>`;
+  panel.classList.add('show');
+  panel.scrollIntoView({behavior:'smooth', block:'nearest'});
+
+  // Async-fill current location
+  if (f.lat != null && f.lon != null) {
+    const myHex = f.hex;
+    fetchLocation(f.lat, f.lon).then(place => {
+      if (pinnedHex !== myHex) return; // user navigated away
+      const el = document.getElementById('dp-loc');
+      if (!el) return;
+      el.textContent = place ? '📍 Currently over: ' + place : '📍 Location unavailable';
+    });
+  } else {
+    const el = document.getElementById('dp-loc');
+    if (el) el.textContent = '📍 Position unknown';
+  }
+
+  // Async-fill route (origin → destination)
+  const myHex2 = f.hex;
+  fetchRoute(f.flight).then(route => {
+    if (pinnedHex !== myHex2) return;
+    const el = document.getElementById('dp-route');
+    if (!el) return;
+    if (!route || (!route.origin && !route.destination)) {
+      el.innerHTML = '🧭 Route data not available for this flight';
+      return;
+    }
+    const o = route.origin, d = route.destination;
+    const oTxt = o ? `${o.city || o.name}${o.iata ? ' (' + o.iata + ')' : ''}` : 'Unknown origin';
+    const dTxt = d ? `${d.city || d.name}${d.iata ? ' (' + d.iata + ')' : ''}` : 'Unknown destination';
+    el.innerHTML = `🧭 <b>${oTxt}</b> &nbsp;→&nbsp; <b>${dTxt}</b>`;
+  });
+}
+
+function closeDetail() {
+  pinnedHex = null;
+  document.getElementById('dPanel').classList.remove('show');
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Search
+// ─────────────────────────────────────────────────────────────────────────────
+function doSearch() { isFirst = true; renderList(); isFirst = false; }
+document.getElementById('qInput').addEventListener('keydown', e => { if (e.key === 'Enter') doSearch(); });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Boot
+// ─────────────────────────────────────────────────────────────────────────────
+if ('serviceWorker' in navigator && !location.hostname.includes('claudeusercontent.com')) {
+  window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+}
+startCycle();
+
+</script>
+</body>
+</html>
