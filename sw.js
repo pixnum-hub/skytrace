@@ -1,8 +1,10 @@
-// SkyTrace Service Worker — v2
-const CACHE_NAME = 'skytrace-v2';
+// SkyTrace Service Worker
+// Caches the app shell for offline launch.
+// Live API calls always go straight to the network.
 
-// Only cache files we know exist — a single 404 in addAll() aborts install
-const PRECACHE = [
+const CACHE = 'skytrace-v1';
+
+const APP_SHELL = [
   './index.html',
   './manifest.json',
   './icons/icon-192.png',
@@ -12,76 +14,56 @@ const PRECACHE = [
   './icons/apple-touch-icon.png'
 ];
 
-// Hostnames whose responses must NEVER be cached
-const LIVE_API_HOSTS = [
+// Domains that must NEVER be cached — always fetch live
+const LIVE_HOSTS = [
   'airplanes.live',
-  'api.airplanes.live',
   'bigdatacloud.net',
-  'api.bigdatacloud.net',
   'adsbdb.com',
-  'api.adsbdb.com',
   'fonts.googleapis.com',
   'fonts.gstatic.com'
 ];
 
-// ── Install: pre-cache app shell ─────────────────────────────────────────────
-self.addEventListener('install', event => {
-  event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then(cache => {
-        // addAll one-by-one so a single failure doesn't abort the whole install
-        return Promise.allSettled(
-          PRECACHE.map(url =>
-            cache.add(url).catch(err => console.warn('[SW] precache miss:', url, err))
-          )
-        );
-      })
-      .then(() => self.skipWaiting())
+// ── Install: pre-cache app shell ──────────────────────────────────────────────
+self.addEventListener('install', e => {
+  e.waitUntil(
+    caches.open(CACHE).then(cache =>
+      // allSettled so one missing file never aborts the whole install
+      Promise.allSettled(APP_SHELL.map(url => cache.add(url)))
+    ).then(() => self.skipWaiting())
   );
 });
 
-// ── Activate: purge old caches ────────────────────────────────────────────────
-self.addEventListener('activate', event => {
-  event.waitUntil(
-    caches.keys()
-      .then(keys => Promise.all(
-        keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k))
-      ))
-      .then(() => self.clients.claim())
+// ── Activate: delete old caches ───────────────────────────────────────────────
+self.addEventListener('activate', e => {
+  e.waitUntil(
+    caches.keys().then(keys =>
+      Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))
+    ).then(() => self.clients.claim())
   );
 });
 
-// ── Fetch: network-first for APIs, cache-first for shell ─────────────────────
-self.addEventListener('fetch', event => {
-  // Only handle GET
-  if (event.request.method !== 'GET') return;
+// ── Fetch ─────────────────────────────────────────────────────────────────────
+self.addEventListener('fetch', e => {
+  if (e.request.method !== 'GET') return;
 
-  const url = new URL(event.request.url);
+  const url = new URL(e.request.url);
 
-  // Pass live API calls straight to network — never cache them
-  if (LIVE_API_HOSTS.some(h => url.hostname.includes(h))) {
-    event.respondWith(
-      fetch(event.request)
-        .catch(() => new Response(
-          '{"error":"offline"}',
-          {status: 503, headers: {'Content-Type': 'application/json'}}
-        ))
-    );
+  // Live API — always network, never cache
+  if (LIVE_HOSTS.some(h => url.hostname.includes(h))) {
+    e.respondWith(fetch(e.request));
     return;
   }
 
-  // App shell: cache-first, then network, then update cache
-  event.respondWith(
-    caches.match(event.request).then(cached => {
-      const networkFetch = fetch(event.request).then(response => {
-        if (response && response.status === 200 && url.origin === self.location.origin) {
-          const clone = response.clone();
-          caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
+  // App shell — cache first, fall back to network
+  e.respondWith(
+    caches.match(e.request).then(cached => {
+      if (cached) return cached;
+      return fetch(e.request).then(res => {
+        if (res && res.status === 200) {
+          caches.open(CACHE).then(c => c.put(e.request, res.clone()));
         }
-        return response;
+        return res;
       });
-      // Return cache immediately if available, but also refresh in background
-      return cached || networkFetch;
     }).catch(() => caches.match('./index.html'))
   );
 });

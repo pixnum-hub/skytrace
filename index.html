@@ -5,17 +5,15 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
 <meta name="format-detection" content="telephone=no,date=no,email=no,address=no">
 <meta name="color-scheme" content="dark light">
-<meta name="mobile-web-app-capable" content="yes">
 <title>SkyTrace — Live Flight Tracker</title>
 <link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#3b82f6" media="(prefers-color-scheme: dark)">
-<meta name="theme-color" content="#2563eb" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#3b82f6">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="SkyTrace">
-<link rel="icon" type="image/png" sizes="32x32" href="icons/icon-32.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="icons/icon-512.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="apple-touch-icon" sizes="152x152" href="icons/icon-152.png">
 <link rel="apple-touch-icon" sizes="167x167" href="icons/icon-167.png">
@@ -863,16 +861,15 @@ document.getElementById('qInput').addEventListener('keydown',e=>{if(e.key==='Ent
 
 // ── Boot ───────────────────────────────────────────────────────────────
 startCycle();
-
-// ── PWA: Register Service Worker ──────────────────────────────────────
-// Requires HTTPS. Works on localhost too. Skips Claude preview sandbox.
+// ── PWA Service Worker Registration ─────────────────────────────────────────
 if ('serviceWorker' in navigator && !location.hostname.includes('claudeusercontent.com')) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('./sw.js', {scope: './'})
-      .then(r => console.log('[SW] Registered, scope:', r.scope))
-      .catch(e => console.warn('[SW] Failed:', e));
+      .then(r => console.log('[SW] registered:', r.scope))
+      .catch(e => console.warn('[SW] failed:', e));
   });
 }
+
 </script>
 </body>
 </html>

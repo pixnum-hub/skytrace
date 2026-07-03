@@ -1,18 +1,15 @@
 {
-  "id": "/skytrace/",
   "name": "SkyTrace — Live Flight Tracker",
   "short_name": "SkyTrace",
-  "description": "Real-time global flight tracker with live altitude, speed, airline, and country data.",
+  "description": "Real-time global flight tracker. Live altitude, speed, airline and country data.",
   "start_url": "./index.html",
   "scope": "./",
+  "id": "./index.html",
   "display": "standalone",
-  "display_override": ["standalone", "minimal-ui", "browser"],
   "orientation": "portrait-primary",
   "background_color": "#0d1117",
   "theme_color": "#3b82f6",
-  "lang": "en-US",
-  "dir": "ltr",
-  "categories": ["travel", "navigation", "utilities"],
+  "lang": "en",
   "prefer_related_applications": false,
   "icons": [
     {
@@ -38,15 +35,6 @@
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
-    }
-  ],
-  "screenshots": [
-    {
-      "src": "icons/icon-512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "form_factor": "narrow",
-      "label": "SkyTrace live flight list"
     }
   ]
 }
