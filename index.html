@@ -135,27 +135,30 @@ main{
 .pill:active{transform:scale(.95);background:var(--acc);border-color:var(--acc);color:#fff}
 .pill.active{background:var(--acc);border-color:var(--acc);color:#fff}
 
-/* ── Search row – splits into 2 rows on very narrow screens ── */
-.srow{display:flex;gap:7px;margin-bottom:10px;flex-wrap:wrap}
+/* ── Search row ── */
+.srow{display:flex;gap:6px;margin-bottom:10px;align-items:center;width:100%}
 .swrap{
   flex:1;min-width:0;
   background:var(--sur);border:1.5px solid var(--bdr);border-radius:10px;
-  padding:0 12px;height:44px;
-  display:flex;align-items:center;gap:8px;
+  padding:0 11px;height:44px;
+  display:flex;align-items:center;gap:7px;
   transition:border-color .15s;
-  /* Take full width when unit buttons push wrap */
-  flex-basis:calc(100% - 130px);
 }
 .swrap:focus-within{border-color:var(--acc)}
 .swrap input{
   flex:1;min-width:0;background:none;border:none;outline:none;
   font-family:var(--mono);
-  /* 16px prevents iOS auto-zoom on focus */
   font-size:16px;color:var(--tx);
 }
 @media(min-width:420px){.swrap input{font-size:.85rem}}
-.swrap input::placeholder{color:var(--mu);font-size:.8rem}
-.unit-btns{display:flex;gap:5px;flex-shrink:0}
+.swrap input::placeholder{color:var(--mu)}
+/* Button group — fixed, never wraps */
+.sbtns{display:flex;gap:5px;flex-shrink:0}
+.smbtn{
+  height:44px;width:44px;padding:0;
+  display:flex;align-items:center;justify-content:center;
+  font-size:.72rem;font-weight:700;
+}
 .btn{
   background:var(--acc);color:#fff;border:none;border-radius:9px;
   padding:0 16px;height:44px;min-width:44px;
@@ -297,10 +300,6 @@ footer{
 /* ── Breakpoints ── */
 /* Phones 360-480px */
 @media(max-width:480px){
-  .srow{flex-wrap:nowrap}
-  .swrap{flex-basis:0;min-width:0}
-  .unit-btns{gap:4px}
-  .btn{padding:0 10px;font-size:.75rem}
   .dpg{grid-template-columns:1fr 1fr}
 }
 /* Narrow phones ≤360px (iPhone SE gen1/2, small Androids) */
@@ -361,11 +360,11 @@ footer{
         placeholder="Callsign, airline, country…" maxlength="24"
         aria-label="Search flights">
     </div>
-    <div class="unit-btns">
-      <button class="btn ol" id="spdUnitBtn" onclick="toggleSpdUnit()" aria-label="Toggle speed unit">KT</button>
-      <button class="btn ol" id="altUnitBtn" onclick="toggleAltUnit()" aria-label="Toggle altitude unit">FT</button>
+    <div class="sbtns">
+      <button class="btn ol smbtn" id="spdUnitBtn" onclick="toggleSpdUnit()" aria-label="Toggle speed unit">KT</button>
+      <button class="btn ol smbtn" id="altUnitBtn" onclick="toggleAltUnit()" aria-label="Toggle altitude unit">FT</button>
+      <button class="btn smbtn" onclick="doSearch()" aria-label="Search">🔍</button>
     </div>
-    <button class="btn" onclick="doSearch()" aria-label="Search">Search</button>
   </div>
 
   <div class="sbar">
